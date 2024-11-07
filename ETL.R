@@ -83,3 +83,43 @@ busca_caged <- function(ano, mes, tipo="mov"){
 
 
 dados_setembro_2024<- busca_caged("2024","09")
+
+
+dados_setembro_2024 %>%
+  mutate(atividade_economica = case_when(
+    secao == "A" ~ "Agropecuaria",
+    secao %in% LETTERS[which(LETTERS == "B"):which(LETTERS == "E")] ~"Indústria",
+    secao == "G" ~ "Comércio",
+    secao == "F" ~ "Construção",
+    secao %in% LETTERS[which(LETTERS == "H"):which(LETTERS == "U")] ~"Serviços",
+    .default = "Não identificado"
+
+  )) %>%
+  summarise( saldo = sum(saldomovimentacao),
+            .by = atividade_economica) %>%
+  arrange(desc(saldo))
+
+
+dados_setembro_2024 %>%
+  mutate(tipomovimentacao = ifelse(sign(saldomovimentacao)==-1,"Desligamento","Admissão")) %>%
+  summarise( movimento = sum(saldomovimentacao),
+             .by = tipomovimentacao) 
+
+dados_setembro_2024 %>%
+  mutate(tipomovimentacao = ifelse(sign(saldomovimentacao)==-1,"Desligamento","Admissão"),
+         regiao = case_when(
+           regiao == 1 ~ "Norte",
+           regiao == 2 ~ "Nordeste",
+           regiao == 3 ~ "Centro Oeste",
+           regiao == 4 ~ "Sul",
+           regiao == 5 ~ "Sudeste",
+           .default = "Não defnido"
+         )) %>%
+  summarise( movimento = sum(saldomovimentacao),
+             .by = c(regiao, tipomovimentacao)) 
+
+
+dados_setembro_2024 %>%
+  mutate(sexo = ifelse(sexo==1,"Homens", "Mulheres")) %>%
+  summarise( saldo = sum(saldomovimentacao),
+             .by = sexo) 
