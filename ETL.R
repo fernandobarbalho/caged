@@ -68,9 +68,19 @@ busca_caged <- function(ano, mes, tipo="mov"){
   
   url_extensao<- paste0(url_base,ano,"/",ano,mes,"/",arquivo_7z)
   
-  download.file(url_extensao,  destfile = arquivo_7z, mode = "wb" )
+  result<- try(download.file(url_extensao,  destfile = arquivo_7z, mode = "wb" ))
+  print(result)
+  if(inherits(result, "try-error")){
+    return()
+  }
 
-  archive::archive_extract(arquivo_7z)
+  result<- try(archive::archive_extract(arquivo_7z))
+  print(result)
+  if(inherits(result, "try-error")){
+    print("Entrou na condição de erro")
+    return()
+  }
+  
   
   df_caged <-readr::read_delim(arquivo_txt, 
                                 delim = ";", escape_double = FALSE, locale = locale(decimal_mark = ",", 
@@ -123,3 +133,8 @@ dados_setembro_2024 %>%
   mutate(sexo = ifelse(sexo==1,"Homens", "Mulheres")) %>%
   summarise( saldo = sum(saldomovimentacao),
              .by = sexo) 
+
+dados_setembro_2024 %>%
+  filter(secao == "G",
+         str_sub(as.character(subclasse),1,2)=="47") %>%
+  summarise(saldo_total = sum(saldomovimentacao))
