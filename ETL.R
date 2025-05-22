@@ -88,14 +88,23 @@ busca_caged <- function(ano, mes, tipo="mov"){
   
   df_caged <- janitor::clean_names(df_caged)
   
+  df_caged <-
+  df_caged%>%
+    mutate(subclasse = as.factor(subclasse),
+           subclasse = str_pad(subclasse,7, side = "left", pad="0"))
+  
   df_caged
 }
 
 
-dados_setembro_2024<- busca_caged("2024","09")
+dados_marco_2025<- busca_caged("2025","03")
 
+fab<-
+dados_marco_2025 %>%
+  mutate(subclasse = as.factor(subclasse),
+         subclasse = str_pad(subclasse,7, side = "left", pad="0"))
 
-dados_setembro_2024 %>%
+dados_marco_2025 %>%
   mutate(atividade_economica = case_when(
     secao == "A" ~ "Agropecuaria",
     secao %in% LETTERS[which(LETTERS == "B"):which(LETTERS == "E")] ~"Indústria",
@@ -103,38 +112,77 @@ dados_setembro_2024 %>%
     secao == "F" ~ "Construção",
     secao %in% LETTERS[which(LETTERS == "H"):which(LETTERS == "U")] ~"Serviços",
     .default = "Não identificado"
-
+    
   )) %>%
   summarise( saldo = sum(saldomovimentacao),
-            .by = atividade_economica) %>%
+             .by = atividade_economica) %>%
   arrange(desc(saldo))
 
 
-dados_setembro_2024 %>%
+dados_marco_2025 %>%
   mutate(tipomovimentacao = ifelse(sign(saldomovimentacao)==-1,"Desligamento","Admissão")) %>%
   summarise( movimento = sum(saldomovimentacao),
              .by = tipomovimentacao) 
 
-dados_setembro_2024 %>%
+dados_marco_2025 %>%
   mutate(tipomovimentacao = ifelse(sign(saldomovimentacao)==-1,"Desligamento","Admissão"),
          regiao = case_when(
            regiao == 1 ~ "Norte",
            regiao == 2 ~ "Nordeste",
-           regiao == 3 ~ "Centro Oeste",
+           regiao == 5 ~ "Centro Oeste",
            regiao == 4 ~ "Sul",
-           regiao == 5 ~ "Sudeste",
+           regiao == 3 ~ "Sudeste",
            .default = "Não defnido"
          )) %>%
   summarise( movimento = sum(saldomovimentacao),
-             .by = c(regiao, tipomovimentacao)) 
+             .by = c(regiao, tipomovimentacao)) %>%
+  arrange(regiao,  tipomovimentacao) %>%
+  writexl::write_xlsx("caged_marco_2025.xlsx")
 
 
-dados_setembro_2024 %>%
+dados_marco_2025 %>%
   mutate(sexo = ifelse(sexo==1,"Homens", "Mulheres")) %>%
   summarise( saldo = sum(saldomovimentacao),
              .by = sexo) 
 
-dados_setembro_2024 %>%
+dados_marco_2025 %>%
   filter(secao == "G",
          str_sub(as.character(subclasse),1,2)=="47") %>%
   summarise(saldo_total = sum(saldomovimentacao))
+
+
+dados_consolidados<-
+dados_marco_2025 %>%
+  mutate(atividade_economica = case_when(
+    secao == "A" ~ "Agropecuaria",
+    secao %in% LETTERS[which(LETTERS == "B"):which(LETTERS == "E")] ~"Indústria",
+    secao == "G" ~ "Comércio",
+    secao == "F" ~ "Construção",
+    secao %in% LETTERS[which(LETTERS == "H"):which(LETTERS == "U")] ~"Serviços",
+    .default = "Não identificado"
+    
+  )) %>%
+  mutate(tipomovimentacao = ifelse(sign(saldomovimentacao)==-1,"Desligamento","Admissão")) %>%
+  mutate(regiao = case_when(
+           regiao == 1 ~ "Norte",
+           regiao == 2 ~ "Nordeste",
+           regiao == 5 ~ "Centro Oeste",
+           regiao == 4 ~ "Sul",
+           regiao == 3 ~ "Sudeste",
+           .default = "Não defnido"
+         )) %>%
+  mutate(divisao = str_sub(as.character(subclasse),1,2),
+         grupo = str_sub(as.character(subclasse),1,3),
+         classe = str_sub(as.character(subclasse),1,5),
+         subclasse = str_sub(as.character(subclasse),1,7)) %>%
+  mutate(
+    faixa_etaria = cut(
+      idade, 
+      breaks = c(0, 17, 24, 29, 39, 49, 64, Inf), 
+      labels = c("Até 17 anos", "18 a 24 anos", "25 a 29 anos", "30 a 39 anos", "40 a 49 anos", "50 a 64 anos", "65 anos ou mais")
+    )
+  ) %>%
+  mutate(sexo = ifelse(sexo==1,"Homens", "Mulheres")) %>%
+  summarise( movimento = sum(saldomovimentacao),
+             .by = c(competenciamov, tipomovimentacao, sexo, faixa_etaria, regiao, atividade_economica, secao, divisao, grupo, classe, subclasse))
+  
