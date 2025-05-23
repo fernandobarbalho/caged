@@ -185,4 +185,81 @@ dados_marco_2025 %>%
   mutate(sexo = ifelse(sexo==1,"Homens", "Mulheres")) %>%
   summarise( movimento = sum(saldomovimentacao),
              .by = c(competenciamov, tipomovimentacao, sexo, faixa_etaria, regiao, atividade_economica, secao, divisao, grupo, classe, subclasse))
-  
+
+
+
+
+
+####Carga de dados vindo do Big Query
+
+#arquivo: consolida_dados_caged
+# https://console.cloud.google.com/bigquery?sq=131751625277:1cbdc2ee8f98432485041d8c190afe90
+
+
+# SELECT caged.cnae_2_secao,
+# CASE 
+# WHEN caged.tipo_movimentacao =  "10" or caged.tipo_movimentacao =  "20" THEN 'Admissão'
+# ELSE 'Demissão'
+# END
+# AS tipo_mov_adm_dem,
+# CASE 
+# WHEN caged.idade <= 17 THEN 'Até 17 anos'
+# WHEN caged.idade BETWEEN 18 and 24 THEN '18 a 24 anos'
+# WHEN caged.idade BETWEEN 25 and 29 THEN '25 a 29 anos'
+# WHEN caged.idade BETWEEN 30 and 39 THEN '30 a 39 anos'
+# WHEN caged.idade BETWEEN 40 and 49 THEN '40 a 49 anos'
+# WHEN caged.idade BETWEEN 50 and 64 THEN '50 a 64 anos'
+# ELSE '65 anos ou mais'
+# END
+# AS faixa_etaria, 
+# if (caged.sexo = "1", "Homens", "Mulheres" ) as sexo, 
+# mun.nome_regiao,
+# substr(caged.cnae_2_subclasse, 1, 2) as divisao,
+# substr(caged.cnae_2_subclasse, 1, 3) as grupo,
+# substr(caged.cnae_2_subclasse, 1, 5) as classe,
+# substr(caged.cnae_2_subclasse, 1, 7) as subclasse,
+# sum(caged.saldo_movimentacao) as movimento
+# FROM `basedosdados.br_me_caged.microdados_movimentacao`  caged
+# inner join basedosdados.br_bd_diretorios_brasil.municipio mun
+# on mun.id_municipio = caged.id_municipio
+# where caged.ano = 2020 and
+# caged.mes = 3 
+# group by caged.cnae_2_secao,
+# tipo_mov_adm_dem,
+# mun.nome_regiao,
+# substr(caged.cnae_2_subclasse, 1, 2) ,
+# substr(caged.cnae_2_subclasse, 1, 3) ,
+# substr(caged.cnae_2_subclasse, 1, 5) ,
+# substr(caged.cnae_2_subclasse, 1, 7),
+# faixa_etaria,
+# caged.sexo
+
+
+dados_marco_2020 <- read_csv("dados_marco_2020.csv")  
+
+dados_marco_2020 %>%
+  summarise(sum(movimento))
+
+dados_marco_2020 %>%
+  summarise(sum(movimento),
+            .by = tipo_mov_adm_dem)
+
+dados_marco_2020 %>%
+  summarise(sum(movimento),
+            .by = cnae_2_secao)
+
+
+dados_marco_2020 %>%
+  summarise(sum(movimento),
+            .by = c(cnae_2_secao, sexo))
+
+
+dados_marco_2020 %>%
+  summarise(sum(movimento),
+            .by = c( sexo))
+
+
+dados_marco_2020 %>%
+  summarise(sum(movimento),
+            .by = c(faixa_etaria))
+
