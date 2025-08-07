@@ -188,7 +188,8 @@ dados_marco_2025 %>%
 
 
 
-
+###Carga de dados do RAIS vindo do Big Query
+#https://console.cloud.google.com/bigquery?sq=131751625277:ed87a5c9ea89443aa47955b5ae6fadce
 
 ####Carga de dados vindo do Big Query
 
